@@ -1,0 +1,114 @@
+// proto/tictactoe.proto
+syntax = "proto3";
+
+package tictactoe;
+option go_package = "tictactoe/proto";
+
+service TicTacToeService {
+  rpc StartGame(StartGameRequest) returns (StartGameResponse);
+  rpc SearchPendingGames(SearchPendingGamesRequest) returns (SearchPendingGamesResponse);
+  rpc JoinGame(JoinGameRequest) returns (JoinGameResponse);
+  rpc MakeMove(MakeMoveRequest) returns (MakeMoveResponse);
+  rpc GetGame(GetGameRequest) returns (GetGameResponse);
+  rpc GetUserStats(GetUserStatsRequest) returns (GetUserStatsResponse);
+}
+
+message StartGameRequest {
+  string user_id = 1;
+  int32 board_size = 2; // optional, defaults to 3
+  int32 winning_length = 3; // optional, defaults to 3
+}
+
+message StartGameResponse {
+  string game_id = 1;
+  GameStatus status = 2;
+  string message = 3;
+}
+
+message SearchPendingGamesRequest {
+  int32 board_size = 1; // optional filter
+  int32 winning_length = 2; // optional filter
+}
+
+message SearchPendingGamesResponse {
+  repeated PendingGame games = 1;
+}
+
+message PendingGame {
+  string game_id = 1;
+  string creator_id = 2;
+  int32 board_size = 3;
+  int32 winning_length = 4;
+  int64 created_at = 5;
+}
+
+message JoinGameRequest {
+  string user_id = 1;
+  string game_id = 2;
+}
+
+message JoinGameResponse {
+  GameStatus status = 1;
+  Game game = 2;
+  string message = 3;
+}
+
+message MakeMoveRequest {
+  string user_id = 1;
+  string game_id = 2;
+  int32 row = 3;
+  int32 col = 4;
+}
+
+message MakeMoveResponse {
+  GameStatus status = 1;
+  Game game = 2;
+  string message = 3;
+}
+
+message GetGameRequest {
+  string game_id = 1;
+  string user_id = 2;
+}
+
+message GetGameResponse {
+  Game game = 1;
+}
+
+message GetUserStatsRequest {
+  string user_id = 1;
+}
+
+message GetUserStatsResponse {
+  UserStats stats = 1;
+}
+
+message Game {
+  string id = 1;
+  string player1_id = 2;
+  string player2_id = 3;
+  repeated string board = 4; // flattened board representation
+  int32 board_size = 5;
+  int32 winning_length = 6;
+  GameStatus status = 7;
+  string current_player_id = 8;
+  string winner_id = 9;
+  int64 created_at = 10;
+  int64 updated_at = 11;
+}
+
+message UserStats {
+  string user_id = 1;
+  int32 wins = 2;
+  int32 losses = 3;
+  int32 draws = 4;
+  int32 total_games = 5;
+}
+
+enum GameStatus {
+  PENDING = 0;
+  IN_PROGRESS = 1;
+  FINISHED_WIN = 2;
+  FINISHED_DRAW = 3;
+  ABANDONED = 4;
+}

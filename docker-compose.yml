@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  tictactoe-server:
+    build: .
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8080 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    environment:
+      - LOG_LEVEL=info
+
+  # Optional: Add a load balancer for multiple instances
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - tictactoe-server
+    profiles:
+      - load-balanced
+
+---
+
+# nginx.conf (for load balancing multiple instances)
+events {
+    worker_connections 1024;
+}
+
+http {
+    upstream tictactoe_backend {
+        server tictactoe-server:8080;
+        # Add more servers for load balancing:
+        # server tictactoe-server-2:8080;
+        # server tictactoe-server-3:8080;
+    }
+
+    server {
+        listen 80;
+        
+        location / {
+            grpc_pass grpc://tictactoe_backend;
+            grpc_set_header Host $host;
+        }
+    }
+}
