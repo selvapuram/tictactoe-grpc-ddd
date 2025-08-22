@@ -93,6 +93,48 @@ func (g *Game) JoinPlayer(playerID string) error {
 }
 
 func (g *Game) MakeMove(playerID string, pos Position) error {
+	err := g.validate(playerID, pos)
+	if err != nil {
+		return err
+	}
+
+	// Determine player symbol
+	symbol := g.GetPlayerSymbol(playerID)
+
+	// Make the move
+	g.Board[pos.Row][pos.Col] = symbol
+	g.UpdatedAt = time.Now()
+
+	// Check for winner
+	if g.checkWinner(pos, symbol) {
+		g.setToWin(playerID)
+	} else if g.isBoardFull() {
+		g.setToDraw()
+	} else {
+		g.switchTurn()
+	}
+
+	return nil
+}
+
+func (g *Game) setToWin(playerID string) {
+	g.Status = StatusFinishedWin
+	g.WinnerID = playerID
+}
+
+func (g *Game) setToDraw() {
+	g.Status = StatusFinishedDraw
+}
+
+func (g *Game) switchTurn() {
+	if g.CurrentPlayer == g.Player1ID {
+		g.CurrentPlayer = g.Player2ID
+	} else {
+		g.CurrentPlayer = g.Player1ID
+	}
+}
+
+func (g *Game) validate(playerID string, pos Position) error {
 	if g.Status != StatusInProgress {
 		return ErrGameFinished
 	}
@@ -108,32 +150,6 @@ func (g *Game) MakeMove(playerID string, pos Position) error {
 	if g.Board[pos.Row][pos.Col] != "" {
 		return ErrPositionOccupied
 	}
-
-	// Determine player symbol
-	symbol := "X"
-	if playerID == g.Player2ID {
-		symbol = "O"
-	}
-
-	// Make the move
-	g.Board[pos.Row][pos.Col] = symbol
-	g.UpdatedAt = time.Now()
-
-	// Check for winner
-	if g.checkWinner(pos, symbol) {
-		g.Status = StatusFinishedWin
-		g.WinnerID = playerID
-	} else if g.isBoardFull() {
-		g.Status = StatusFinishedDraw
-	} else {
-		// Switch turns
-		if g.CurrentPlayer == g.Player1ID {
-			g.CurrentPlayer = g.Player2ID
-		} else {
-			g.CurrentPlayer = g.Player1ID
-		}
-	}
-
 	return nil
 }
 

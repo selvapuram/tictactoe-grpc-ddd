@@ -71,9 +71,6 @@ docker-build: ## Build Docker image
 docker-run: docker-build ## Run in Docker
 	docker run -p 8080:8080 $(DOCKER_IMAGE)
 
-lint: ## Run linter
-	golangci-lint run ./...
-
 format: ## Format code
 	$(GOCMD) fmt ./...
 	$(GOCMD) mod tidy
@@ -81,7 +78,6 @@ format: ## Format code
 install-tools: ## Install development tools
 	$(GOGET) -u google.golang.org/protobuf/cmd/protoc-gen-go
 	$(GOGET) -u google.golang.org/grpc/cmd/protoc-gen-go-grpc
-	$(GOGET) -u github.com/golangci/golangci-lint/cmd/golangci-lint
 
 dev: ## Development setup
 	make install-tools

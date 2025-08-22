@@ -130,11 +130,11 @@ func TestDrawGame(t *testing.T) {
 		{"player1", 0, 0}, // X
 		{"player2", 0, 1}, // O
 		{"player1", 0, 2}, // X
-		{"player2", 1, 0}, // O
-		{"player1", 1, 2}, // X
 		{"player2", 1, 1}, // O
-		{"player1", 2, 0}, // X
-		{"player2", 2, 1}, // O
+		{"player1", 1, 0}, // X
+		{"player2", 1, 2}, // O
+		{"player1", 2, 1}, // X
+		{"player2", 2, 0}, // O
 		{"player1", 2, 2}, // X
 	}
 
