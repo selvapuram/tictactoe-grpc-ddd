@@ -46,18 +46,15 @@ test-unit: ## Run unit tests
 	@echo "Running unit tests..."
 	$(GOTEST) -v -race -coverprofile=coverage-unit.out ./internal/...
 
-test-integration: ## Run integration tests
-	@echo "Running integration tests..."
-	$(GOTEST) -v -race -coverprofile=coverage-integration.out ./test/integration/...
+test-acceptance: ## Run acceptance tests
+	@echo "Running acceptance tests..."
+	$(GOTEST) -v -race -coverprofile=coverage-acceptance.out -coverpkg=./... ./test/acceptance/...
 
-test-coverage: test ## Generate test coverage report
+test-coverage: ## Generate test coverage report
 	@echo "Generating coverage report..."
 	$(GOCMD) tool cover -html=coverage-unit.out -o coverage-unit.html
-	$(GOCMD) tool cover -html=coverage-integration.out -o coverage-integration.html
-	@echo "Coverage reports generated: coverage-unit.html, coverage-integration.html"
-
-benchmark: ## Run benchmarks
-	$(GOTEST) -bench=. -benchmem ./...
+	$(GOCMD) tool cover -html=coverage-acceptance.out -o coverage-acceptance.html
+	@echo "Coverage reports generated: coverage-unit.html, coverage-acceptance.html"
 
 clean: ## Clean build artifacts
 	@echo "Cleaning..."
