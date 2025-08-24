@@ -140,8 +140,8 @@ make test
 # Run only unit tests
 make test-unit
 
-# Run only integration tests
-make test-integration
+# Run only acceptance tests
+make test-acceptance
 
 # Generate coverage report
 make test-coverage
