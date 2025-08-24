@@ -104,6 +104,10 @@ The server will start on port 8080.
 # Download dependencies
 go mod download
 
+# How to Install the Protocol Buffer Compiler
+Follow the official installation guide for the Protocol Buffer Compiler:
+[Protocol Buffer Compiler Installation Guide](https://protobuf.dev/installation/)
+
 # Generate protobuf code
 protoc --go_out=. --go_opt=paths=source_relative \
     --go-grpc_out=. --go-grpc_opt=paths=source_relative \
@@ -170,14 +174,26 @@ You can test the gRPC API using tools like:
    })
    ```
 
+## Design Notes & Tradeoffs
+
+- **Transport choice (gRPC):** The brief prefers gRPC; however, gRPC requires codegen and toolchain setup. In production, I’d define a `.proto` with messages mirroring `GameSummary`, `StartGameRequest`, etc., and expose both gRPC and JSON via a gateway.
+- **In-memory store:** Everything is kept in-memory per the brief. Each `Game` carries its own mutex, avoiding global contention during moves.
+- **Scalability:** With millions of users, a single process won’t suffice. Two directions:
+  - **Sticky sharding by GameID**: front a fleet of stateless API instances with a layer-4 hash (or a service mesh) that routes all requests for a given `GameID` to the same instance. This preserves in-memory state with minimal coordination.
+  - **External state/eventing** (future): replace the in-memory store with Redis for ephemeral game state and a message bus (e.g., NATS/Kafka) for events (move, finish). That permits fan-out and spectators/SSE/WebSocket streams. Stats could be tallied asynchronously per user.
+- **Concurrency & safety:** The `Repo` uses RW locks for game lookup and a per-game mutex for move semantics.
+- **Validation:** `board_size >= 3`, `win_length >= 3`, `win_length <= board_size`, hard cap `board_size <= 20` for this demo.
+- **Winner detection:** A straightforward O(N^2 * D * K) scan (D=4 directions, K=win_length), which is fine per the brief (no need to optimize). Works for any square board and any `win_length` up to `board_size`.
+- **Testing:** Unit tests cover win/draw logic; acceptance test runs a full server and validates a complete match flow and per-user stats.
+- **Observability:** Minimal structured logging is included; in production, I’d add request IDs, structured logs, metrics (Prometheus), and tracing.
+
 ## Scalability Considerations
 
 ### Current Architecture Benefits
 
 1. **Stateless Design**: Each request is self-contained, enabling horizontal scaling
-2. **In-Memory Storage**: Ultra-fast access times, suitable for real-time gaming
-3. **Concurrent Safety**: All repositories use proper locking mechanisms
-4. **Resource Efficiency**: Minimal memory footprint per game (~1KB)
+2. **Concurrent Safety**: All repositories use proper locking mechanisms
+3. **Resource Efficiency**: Minimal memory footprint per game (~1KB)
 
 ### Production Scaling Strategies
 
@@ -253,25 +269,3 @@ With current in-memory design:
 - ✅ Easier development for small team
 - ❌ Less flexibility for independent scaling
 - ❌ Single point of failure
-
-## Future Enhancements
-
-1. **Real-time Notifications**: WebSocket/Server-Sent Events for live updates
-2. **Tournament Mode**: Multi-player tournaments with brackets
-3. **AI Opponents**: Computer players with different difficulty levels
-4. **Game Replay**: Store and replay completed games
-5. **Leaderboards**: Global and time-based rankings
-6. **Authentication**: Proper user management and security
-7. **Monitoring**: Metrics, logging, and health checks
-8. **Admin API**: Game management and user administration
-
-## Contributing
-
-1. Follow the existing code style and architecture patterns
-2. Add tests for new features
-3. Update documentation for API changes
-4. Run `make lint` before submitting changes
-
-## License
-
-[Add your license here]

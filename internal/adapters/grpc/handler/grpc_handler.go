@@ -3,9 +3,13 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"tictactoe/internal/domain/entity"
 	"tictactoe/internal/domain/port"
 	pb "tictactoe/proto"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type GRPCHandler struct {
@@ -22,9 +26,10 @@ func NewGRPCHandler(gameService port.GameService) *GRPCHandler {
 func (h *GRPCHandler) StartGame(ctx context.Context, req *pb.StartGameRequest) (*pb.StartGameResponse, error) {
 	boardSize := int(req.BoardSize)
 	winningLength := int(req.WinningLength)
-	
+
 	game, err := h.gameService.StartGame(req.UserId, boardSize, winningLength)
 	if err != nil {
+		//TODO: handle grpc status codes properly https://grpc.io/docs/guides/status-codes/
 		return &pb.StartGameResponse{
 			Status:  mapGameStatusToProto(game.Status),
 			Message: err.Error(),
@@ -48,9 +53,10 @@ func (h *GRPCHandler) StartGame(ctx context.Context, req *pb.StartGameRequest) (
 func (h *GRPCHandler) SearchPendingGames(ctx context.Context, req *pb.SearchPendingGamesRequest) (*pb.SearchPendingGamesResponse, error) {
 	boardSize := int(req.BoardSize)
 	winningLength := int(req.WinningLength)
-	
+
 	games, err := h.gameService.SearchPendingGames(boardSize, winningLength)
 	if err != nil {
+		//TODO: handle grpc status codes properly https://grpc.io/docs/guides/status-codes/
 		return nil, err
 	}
 
@@ -73,6 +79,7 @@ func (h *GRPCHandler) SearchPendingGames(ctx context.Context, req *pb.SearchPend
 func (h *GRPCHandler) JoinGame(ctx context.Context, req *pb.JoinGameRequest) (*pb.JoinGameResponse, error) {
 	game, err := h.gameService.JoinGame(req.UserId, req.GameId)
 	if err != nil {
+		//TODO: handle grpc status codes properly https://grpc.io/docs/guides/status-codes/
 		return &pb.JoinGameResponse{
 			Status:  pb.GameStatus_PENDING,
 			Message: err.Error(),
@@ -89,6 +96,7 @@ func (h *GRPCHandler) JoinGame(ctx context.Context, req *pb.JoinGameRequest) (*p
 func (h *GRPCHandler) MakeMove(ctx context.Context, req *pb.MakeMoveRequest) (*pb.MakeMoveResponse, error) {
 	game, err := h.gameService.MakeMove(req.UserId, req.GameId, int(req.Row), int(req.Col))
 	if err != nil {
+		//TODO: handle grpc status codes properly https://grpc.io/docs/guides/status-codes/
 		return &pb.MakeMoveResponse{
 			Status:  pb.GameStatus_IN_PROGRESS,
 			Message: err.Error(),
@@ -119,7 +127,17 @@ func (h *GRPCHandler) MakeMove(ctx context.Context, req *pb.MakeMoveRequest) (*p
 func (h *GRPCHandler) GetGame(ctx context.Context, req *pb.GetGameRequest) (*pb.GetGameResponse, error) {
 	game, err := h.gameService.GetGame(req.GameId, req.UserId)
 	if err != nil {
-		return nil, err
+		// Map service errors to gRPC status codeshttps://grpc.io/docs/guides/status-codes/
+		var grpcErr error
+		switch {
+		case errors.Is(err, entity.ErrGameNotFound): // Example custom error
+			grpcErr = status.Errorf(codes.NotFound, "Game not found: %v", err)
+		case errors.Is(err, entity.ErrPlayerNotInGame): // Example custom error
+			grpcErr = status.Errorf(codes.PermissionDenied, "Unauthorized access: %v", err)
+		default:
+			grpcErr = status.Errorf(codes.Internal, "Internal server error: %v", err)
+		}
+		return nil, grpcErr
 	}
 
 	return &pb.GetGameResponse{
@@ -130,7 +148,15 @@ func (h *GRPCHandler) GetGame(ctx context.Context, req *pb.GetGameRequest) (*pb.
 func (h *GRPCHandler) GetUserStats(ctx context.Context, req *pb.GetUserStatsRequest) (*pb.GetUserStatsResponse, error) {
 	stats, err := h.gameService.GetUserStats(req.UserId)
 	if err != nil {
-		return nil, err
+		// Map service errors to gRPC status codes https://grpc.io/docs/guides/status-codes/
+		var grpcErr error
+		switch {
+		case errors.Is(err, entity.ErrUserNotFound): // Example custom error
+			grpcErr = status.Errorf(codes.NotFound, "User not found: %v", err)
+		default:
+			grpcErr = status.Errorf(codes.Internal, "Internal server error: %v", err)
+		}
+		return nil, grpcErr
 	}
 
 	return &pb.GetUserStatsResponse{

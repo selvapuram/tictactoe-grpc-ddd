@@ -21,7 +21,7 @@ func NewInMemoryGameRepository() port.GameRepository {
 func (r *inMemoryGameRepository) Save(game *entity.Game) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	// Deep copy to prevent external mutations
 	gameCopy := *game
 	boardCopy := make([][]string, len(game.Board))
@@ -30,7 +30,7 @@ func (r *inMemoryGameRepository) Save(game *entity.Game) error {
 		copy(boardCopy[i], row)
 	}
 	gameCopy.Board = boardCopy
-	
+
 	r.games[game.ID] = &gameCopy
 	return nil
 }
@@ -38,12 +38,12 @@ func (r *inMemoryGameRepository) Save(game *entity.Game) error {
 func (r *inMemoryGameRepository) FindByID(id string) (*entity.Game, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	game, exists := r.games[id]
 	if !exists {
 		return nil, entity.ErrGameNotFound
 	}
-	
+
 	// Deep copy to prevent external mutations
 	gameCopy := *game
 	boardCopy := make([][]string, len(game.Board))
@@ -52,16 +52,16 @@ func (r *inMemoryGameRepository) FindByID(id string) (*entity.Game, error) {
 		copy(boardCopy[i], row)
 	}
 	gameCopy.Board = boardCopy
-	
+
 	return &gameCopy, nil
 }
 
 func (r *inMemoryGameRepository) FindPendingGames(boardSize, winningLength int) ([]*entity.Game, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	var pendingGames []*entity.Game
-	
+
 	for _, game := range r.games {
 		if game.Status == entity.StatusPending {
 			// Filter by parameters if specified
@@ -71,7 +71,7 @@ func (r *inMemoryGameRepository) FindPendingGames(boardSize, winningLength int) 
 			if winningLength > 0 && game.WinningLength != winningLength {
 				continue
 			}
-			
+
 			// Deep copy
 			gameCopy := *game
 			boardCopy := make([][]string, len(game.Board))
@@ -80,25 +80,27 @@ func (r *inMemoryGameRepository) FindPendingGames(boardSize, winningLength int) 
 				copy(boardCopy[i], row)
 			}
 			gameCopy.Board = boardCopy
-			
+
 			pendingGames = append(pendingGames, &gameCopy)
 		}
 	}
-	
+
 	return pendingGames, nil
 }
 
+// unused method to clean up the stale games
 func (r *inMemoryGameRepository) Delete(id string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	
+
 	delete(r.games, id)
 	return nil
 }
 
+// Count returns the number of games in the repository. unused method to get the number of games
 func (r *inMemoryGameRepository) Count() int64 {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
-	
+
 	return int64(len(r.games))
 }

@@ -30,6 +30,10 @@ func TestGameService_StartGame(t *testing.T) {
 	assert.Equal(t, entity.StatusInProgress, game2.Status)
 	assert.Equal(t, game.ID, game2.ID) // Same game
 	assert.Equal(t, "player2", game2.Player2ID)
+
+	// Test get game with different player
+	_, err = service.GetGame(game2.ID, "player3")
+	assert.Equal(t, entity.ErrPlayerNotInGame, err)
 }
 
 func TestGameService_MakeMove(t *testing.T) {
@@ -93,6 +97,10 @@ func TestGameService_CompleteGame(t *testing.T) {
 
 	assert.Equal(t, entity.StatusFinishedWin, game.Status)
 	assert.Equal(t, "player1", game.WinnerID)
+
+	// Check ErrGameFinished on further moves
+	_, err := service.MakeMove("player2", game.ID, 2, 2)
+	assert.Equal(t, entity.ErrGameFinished, err)
 
 	// Check stats
 	stats1, _ := service.GetUserStats("player1")
